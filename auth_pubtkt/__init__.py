@@ -3,10 +3,10 @@ This module contains routines and WSGI middleware for working with mod_auth_pubt
 
 See https://neon1.net/mod_auth_pubtkt/ for more details
 """
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import hashlib
 import base64
-import Cookie
+import http.cookies
 import logging
 import time
 from M2Crypto import RSA, DSA
@@ -289,7 +289,7 @@ class AuthPubTKTMiddleware(object):
                 pubkey = RSA.load_pub_key(authpubkey)
             else:
                 pubkey = DSA.load_pub_key(authpubkey)
-        except Exception, err:
+        except Exception as err:
             raise ConfigError('Error loading public key %s: %s' % (authpubkey, str(err)))
 
         if 'required_tokens' not in kw:
@@ -320,13 +320,13 @@ class AuthPubTKTMiddleware(object):
 
 
     def __call__(self, environ, start_response):
-        cookies = Cookie.SimpleCookie(environ.get('HTTP_COOKIE', ''))
-        if cookies.has_key(self.cookie_name):
+        cookies = http.cookies.SimpleCookie(environ.get('HTTP_COOKIE', ''))
+        if self.cookie_name in cookies:
             cookie_value = cookies[self.cookie_name].value
         else:
             cookie_value = ''
         if cookie_value:
-            cookie_value = urllib.unquote(cookie_value)
+            cookie_value = urllib.parse.unquote(cookie_value)
             
             def get_parsed_ticket():
                 self.log.debug('Parse ticket: %s' % cookie_value)
@@ -337,7 +337,7 @@ class AuthPubTKTMiddleware(object):
                     fields = get_parsed_ticket()
                 else:
                     fields = self.cache.get(cookie_value, createfunc=get_parsed_ticket)
-            except TicketParseError, err:
+            except TicketParseError as err:
                 self.log.debug(str(err))
                 return self.app(environ, start_response)
 

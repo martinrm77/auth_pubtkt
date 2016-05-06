@@ -2,7 +2,7 @@
 http_auth_request (http://mdounin.ru/hg/ngx_http_auth_request_module)
 """
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import logging
 from datetime import datetime
 from webob import Request, Response
@@ -37,7 +37,7 @@ class AuthRequestApp(object):
             self.log.debug("Deny: there is no ticket in cookie '%s'" % self.cookie_name)
             return unauth()
         
-        ticket = urllib.unquote(ticket)
+        ticket = urllib.parse.unquote(ticket)
         
         def get_parsed_ticket():
             self.log.debug('Parse ticket: %s' % ticket)
@@ -45,7 +45,7 @@ class AuthRequestApp(object):
 
         try:
             fields = self.cache.get(ticket, createfunc=get_parsed_ticket) if self.cache else get_parsed_ticket()
-        except TicketParseError, err:
+        except TicketParseError as err:
             self.log.info('Ticket parse error:\n' + str(err))
             return unauth()
         
@@ -124,7 +124,7 @@ def make_app(global_conf,
     
 
 if __name__ == '__main__':
-    print TokensExpr('&su,mgr,|11,22', ['su', 'mgr', '11']).eval()
+    print(TokensExpr('&su,mgr,|11,22', ['su', 'mgr', '11']).eval())
     
 ##     import sys
 ##     from paste import httpserver
